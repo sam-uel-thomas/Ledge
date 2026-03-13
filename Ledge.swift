@@ -179,6 +179,7 @@ struct SettingsView: View {
                             Text("Dark").tag("Dark")
                         }
                         .pickerStyle(SegmentedPickerStyle())
+                        .frame(maxWidth: .infinity) // Ensures picker fills the width
                     }
                     
                     VStack(alignment: .leading, spacing: 12) {
