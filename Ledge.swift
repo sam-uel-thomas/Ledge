@@ -11,22 +11,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
-        
+
         // 1. Setup Status Bar Item (Menu Bar Icon)
         setupStatusItem()
-        
+
         ledgeWindowController = LedgeWindowController()
-        
+
         // 2. Setup ShakeDetector
         shakeDetector = ShakeDetector(onShake: { [weak self] location in
             self?.ledgeWindowController?.showShelf(at: location)
         })
         shakeDetector?.startMonitoring()
-        
+
         // Apply initial appearance
         AppearanceManager.shared.updateSystemAppearance()
-        
-        print("Ledge Build: \(Date()) - Stack Mode & Move Support")
+
+        print("Ledge Build (Stack Mode): \(Date()) - Successfully Started")
     }
     
     func setupStatusItem() {
