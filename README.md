@@ -5,6 +5,8 @@ Ledge is a minimalist, high-performance macOS utility that provides a "temporary
 ## ✨ Features
 
 - **Shake-to-Summon**: Hold left-click and shake your mouse rapidly to bring up the Ledge.
+- **Stack Mode**: Drop multiple files onto the Ledge. It can hold a collection, and you can expand the shelf to see them in a list.
+- **Move Mode**: Toggle an option in Settings to **move** files from their original location instead of copying them when dragging out of the Ledge.
 - **Springy UI**: A smooth, native-feeling interface with 0.3s fade-in/out animations.
 - **Draggable**: Use the subtle handle at the top of the tile to move it anywhere on your screen.
 - **Appearance Settings**: Toggle between Light, Dark, and System appearance modes via the Menu Bar.

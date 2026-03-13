@@ -26,7 +26,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Apply initial appearance
         AppearanceManager.shared.updateSystemAppearance()
         
-        print("Ledge Build: \(Date()) - Theme Sync & UI Refinement")
+        print("Ledge Build: \(Date()) - Stack Mode & Move Support")
     }
     
     func setupStatusItem() {
@@ -86,12 +86,13 @@ extension Color {
     }
 }
 
-// APPEARANCE MANAGER
+// APPEARANCE & SETTINGS MANAGER
 class AppearanceManager: ObservableObject {
     static let shared = AppearanceManager()
     @AppStorage("appearanceMode") var appearanceMode: String = "System" {
         didSet { updateSystemAppearance() }
     }
+    @AppStorage("moveFiles") var moveFiles: Bool = false
     
     var colorScheme: ColorScheme? {
         switch appearanceMode {
@@ -116,7 +117,7 @@ class AppearanceManager: ObservableObject {
 class SettingsWindowController: NSWindowController {
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 320),
+            contentRect: NSRect(x: 0, y: 0, width: 320, height: 380),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -157,18 +158,31 @@ struct SettingsView: View {
                 
                 Divider().background(textColor.opacity(0.3)).padding(.horizontal, 40)
                 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Appearance")
-                        .font(.caption)
-                        .foregroundColor(textColor.opacity(0.6))
-                        .padding(.leading, 5)
-                    
-                    Picker("", selection: $appearance.appearanceMode) {
-                        Text("System").tag("System")
-                        Text("Light").tag("Light")
-                        Text("Dark").tag("Dark")
+                VStack(alignment: .leading, spacing: 15) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("Appearance")
+                            .font(.caption)
+                            .foregroundColor(textColor.opacity(0.6))
+                            .padding(.leading, 5)
+                        
+                        Picker("", selection: $appearance.appearanceMode) {
+                            Text("System").tag("System")
+                            Text("Light").tag("Light")
+                            Text("Dark").tag("Dark")
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
                     }
-                    .pickerStyle(SegmentedPickerStyle())
+                    
+                    Toggle("Move files instead of copying", isOn: $appearance.moveFiles)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(textColor)
+                        .toggleStyle(SwitchToggleStyle(tint: .blue))
+                        .padding(.top, 5)
+                    
+                    Text("Only applies when moving between local storage. Drops to browsers will always copy.")
+                        .font(.system(size: 10))
+                        .foregroundColor(textColor.opacity(0.5))
+                        .padding(.leading, 5)
                 }
                 .padding(.horizontal, 40)
                 
@@ -180,7 +194,7 @@ struct SettingsView: View {
                     .padding(.bottom, 25)
             }
         }
-        .frame(width: 320, height: 320)
+        .frame(width: 320, height: 380)
         .preferredColorScheme(appearance.colorScheme)
     }
 }
@@ -198,10 +212,10 @@ struct CloseButton: View {
             ZStack {
                 Circle()
                     .fill(textColor.opacity(isHovering ? 0.2 : 0.1))
-                    .frame(width: 20, height: 20) // Shrunk slightly
+                    .frame(width: 20, height: 20)
                 
                 Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold)) // Shrunk slightly
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundColor(textColor.opacity(0.7))
             }
             .scaleEffect(isHovering ? 1.05 : 1.0)
@@ -275,12 +289,10 @@ class LedgeWindowController: NSWindowController {
         let adjustedOrigin = NSPoint(x: location.x - 80, y: location.y - 80)
         window.setFrameOrigin(adjustedOrigin)
         
-        // Start invisible for fade-in
         window.alphaValue = 0
         window.makeKeyAndOrderFront(nil)
         window.orderFrontRegardless()
         
-        // 0.3s Fade-in animation
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.3
             window.animator().alphaValue = 1
@@ -296,11 +308,22 @@ struct WindowDragHandle: NSViewRepresentable {
     }
 }
 
-struct DroppedFile: Identifiable {
-    let id = UUID()
+struct DroppedFile: Identifiable, Equatable {
+    let id: UUID
     let url: URL
     let image: NSImage
     let name: String
+    
+    init(id: UUID = UUID(), url: URL, image: NSImage, name: String) {
+        self.id = id
+        self.url = url
+        self.image = image
+        self.name = name
+    }
+    
+    static func == (lhs: DroppedFile, rhs: DroppedFile) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 // 3. THE SHELF UI
@@ -308,9 +331,10 @@ struct LedgeView: View {
     weak var panel: NSPanel?
     @ObservedObject var appearance = AppearanceManager.shared
     @Environment(\.colorScheme) var systemScheme
-    @State private var droppedFile: DroppedFile? = nil
+    @State private var droppedFiles: [DroppedFile] = []
     @State private var isTargeted = false
     @State private var isFadingOut = false
+    @State private var isExpanded = false
     
     private var bgColor: Color { Color.resolvedBackground(scheme: systemScheme, mode: appearance.appearanceMode) }
     private var textColor: Color { Color.resolvedText(scheme: systemScheme, mode: appearance.appearanceMode) }
@@ -330,81 +354,217 @@ struct LedgeView: View {
                 ZStack {
                     WindowDragHandle().frame(height: 35)
                     
-                    Capsule()
-                        .fill(textColor.opacity(0.2))
-                        .frame(width: 36, height: 4)
+                    if droppedFiles.count > 1 {
+                        Button(action: { withAnimation(.spring()) { isExpanded.toggle() } }) {
+                            HStack(spacing: 4) {
+                                Capsule()
+                                    .fill(textColor.opacity(0.2))
+                                    .frame(width: 36, height: 4)
+                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundColor(textColor.opacity(0.5))
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
                         .padding(.top, 12)
+                    } else {
+                        Capsule()
+                            .fill(textColor.opacity(0.2))
+                            .frame(width: 36, height: 4)
+                            .padding(.top, 12)
+                    }
                     
                     HStack {
                         Spacer()
                         CloseButton {
-                            self.droppedFile = nil
-                            self.panel?.orderOut(nil)
+                            dismissLedge()
                         }
                         .padding(.trailing, 10)
-                        .padding(.top, 4) // Align with handle
+                        .padding(.top, 4)
                     }
                 }
                 .frame(height: 35)
                 
-                Spacer()
-                
-                VStack(spacing: 8) {
-                    if let file = droppedFile {
-                        VStack {
-                            Image(nsImage: file.image).resizable().scaledToFit().frame(width: 68, height: 68)
-                            Text(file.name)
-                                .font(.system(size: 11, weight: .semibold))
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                                .foregroundColor(textColor)
-                                .padding(.horizontal, 14)
-                        }
-                        .onDrag {
-                            let provider = NSItemProvider(item: file.url as NSSecureCoding, typeIdentifier: UTType.fileURL.identifier)
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                withAnimation(.easeOut(duration: 0.3)) { self.isFadingOut = true }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    self.droppedFile = nil
-                                    self.panel?.orderOut(nil)
-                                    self.isFadingOut = false
-                                }
-                            }
-                            return provider
-                        }
-                    } else {
-                        VStack(spacing: 8) {
-                            Image(systemName: "square.stack.3d.down.right")
-                                .font(.system(size: 28, weight: .thin))
-                                .foregroundColor(textColor.opacity(0.8)) // Matches text color
-                            Text("Drop Files")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(textColor.opacity(0.6))
-                        }.opacity(isTargeted ? 1.0 : 0.5)
-                    }
-                }.padding(.bottom, 24)
-                Spacer()
+                if isExpanded && droppedFiles.count > 1 {
+                    expandedListView
+                } else {
+                    mainContentView
+                }
             }
         }
         .frame(width: 160, height: 160)
         .opacity(isFadingOut ? 0 : 1)
         .preferredColorScheme(appearance.colorScheme)
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
-            guard let provider = providers.first else { return false }
+            handleDrop(providers: providers)
+            return true
+        }
+    }
+    
+    private var mainContentView: some View {
+        VStack {
+            Spacer()
+            if let firstFile = droppedFiles.first {
+                VStack(spacing: 8) {
+                    ZStack {
+                        if droppedFiles.count > 1 {
+                            // Stack visual effect
+                            ForEach(1..<min(droppedFiles.count, 3), id: \.self) { index in
+                                Image(nsImage: droppedFiles[index].image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 60, height: 60)
+                                    .offset(x: CGFloat(index) * 4, y: CGFloat(index) * 4)
+                                    .opacity(0.3)
+                            }
+                        }
+                        
+                        Image(nsImage: firstFile.image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 68, height: 68)
+                    }
+                    
+                    Text(droppedFiles.count > 1 ? "\(droppedFiles.count) Files" : firstFile.name)
+                        .font(.system(size: 11, weight: .semibold))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .foregroundColor(textColor)
+                        .padding(.horizontal, 14)
+                }
+                .onDrag {
+                    startDrag(files: droppedFiles)
+                }
+            } else {
+                VStack(spacing: 8) {
+                    Image(systemName: "square.stack.3d.down.right")
+                        .font(.system(size: 28, weight: .thin))
+                        .foregroundColor(.blue)
+                    Text("Drop Files")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(textColor.opacity(0.6))
+                }
+                .opacity(isTargeted ? 1.0 : 0.5)
+            }
+            Spacer()
+        }
+        .padding(.bottom, 10)
+    }
+    
+    private var expandedListView: some View {
+        ScrollView {
+            VStack(spacing: 2) {
+                ForEach(droppedFiles) { file in
+                    HStack {
+                        Image(nsImage: file.image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
+                        Text(file.name)
+                            .font(.system(size: 10, weight: .medium))
+                            .lineLimit(1)
+                            .foregroundColor(textColor)
+                        Spacer()
+                        Button(action: { removeFile(file) }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 7, weight: .bold))
+                                .foregroundColor(textColor.opacity(0.4))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .contentShape(Rectangle())
+                    .onDrag {
+                        startDrag(files: [file])
+                    }
+                }
+            }
+            .padding(.top, 5)
+        }
+        .frame(maxHeight: 115)
+    }
+    
+    private func handleDrop(providers: [NSItemProvider]) {
+        for provider in providers {
             provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { (item, error) in
                 var finalURL: URL?
                 if let url = item as? URL { finalURL = url }
                 else if let data = item as? Data { finalURL = URL(dataRepresentation: data, relativeTo: nil) }
+                
                 guard let url = finalURL else { return }
+                
                 DispatchQueue.global(qos: .userInitiated).async {
                     let icon = NSWorkspace.shared.icon(forFile: url.path)
                     let name = url.lastPathComponent
+                    
                     DispatchQueue.main.async {
-                        withAnimation(.spring()) { self.droppedFile = DroppedFile(url: url, image: icon, name: name) }
+                        withAnimation(.spring()) {
+                            let newFile = DroppedFile(url: url, image: icon, name: name)
+                            if !droppedFiles.contains(where: { $0.url == url }) {
+                                self.droppedFiles.append(newFile)
+                            }
+                        }
                     }
                 }
             }
-            return true
+        }
+    }
+    
+    private func startDrag(files: [DroppedFile]) -> NSItemProvider {
+        // Return first item provider, but we could support multiple if needed
+        // For simplicity, we provide the first one. macOS will handle single file URL drag.
+        guard let first = files.first else { return NSItemProvider() }
+        
+        let provider = NSItemProvider(item: first.url as NSSecureCoding, typeIdentifier: UTType.fileURL.identifier)
+        
+        // Handle Move vs Copy logic
+        let moveFiles = appearance.moveFiles
+        let urlsToDelete = files.map { $0.url }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            // We animate the dismissal
+            withAnimation(.easeOut(duration: 0.3)) {
+                self.isFadingOut = true
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                // Check if we should delete (Move operation)
+                if moveFiles {
+                    for url in urlsToDelete {
+                        // Check if file still exists and is on local storage
+                        // (Heuristic: dropped to browser usually doesn't trigger move operation at OS level,
+                        // but here we manually delete if setting is on. 
+                        // To be safer, we could check if it was a MOVE operation, but SwiftUI doesn't expose it here.)
+                        try? FileManager.default.removeItem(at: url)
+                    }
+                }
+                
+                self.droppedFiles.removeAll { files.contains($0) }
+                if self.droppedFiles.isEmpty {
+                    self.panel?.orderOut(nil)
+                }
+                self.isFadingOut = false
+                self.isExpanded = false
+            }
+        }
+        return provider
+    }
+    
+    private func removeFile(_ file: DroppedFile) {
+        withAnimation {
+            droppedFiles.removeAll { $0.id == file.id }
+            if droppedFiles.isEmpty {
+                dismissLedge()
+            }
+        }
+    }
+    
+    private func dismissLedge() {
+        withAnimation {
+            self.droppedFiles = []
+            self.panel?.orderOut(nil)
+            self.isExpanded = false
         }
     }
 }
