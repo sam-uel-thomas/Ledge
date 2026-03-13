@@ -174,16 +174,20 @@ struct SettingsView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 5) {
-                        HStack(spacing: 6) {
-                            Toggle("Move files instead of copying", isOn: $appearance.moveFiles)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(textColor)
-                                .toggleStyle(SwitchToggleStyle(tint: .blue))
-                            
-                            Image(systemName: "info.circle")
-                                .font(.system(size: 11))
-                                .foregroundColor(textColor.opacity(0.5))
-                                .help("Only applies when moving between local storage. Drops to browsers will always copy.")
+                        HStack(spacing: 0) {
+                            Toggle(isOn: $appearance.moveFiles) {
+                                HStack(spacing: 4) {
+                                    Text("Move files instead of copying")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(textColor)
+                                        .lineLimit(1)
+                                    
+                                    InfoButton(text: "Only applies when moving between local storage. Drops to browsers will always copy.")
+                                }
+                            }
+                            .toggleStyle(SwitchToggleStyle(tint: .blue))
+                            .scaleEffect(0.85) // Make the toggle a little smaller
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                     .padding(.top, 5)
@@ -253,6 +257,33 @@ struct ListCloseButton: View {
         }
         .buttonStyle(PlainButtonStyle())
         .onHover { hovering in isHovering = hovering }
+    }
+}
+
+struct InfoButton: View {
+    @State private var isShowingPopover = false
+    @Environment(\.colorScheme) var systemScheme
+    @ObservedObject var appearance = AppearanceManager.shared
+    var text: String
+
+    private var textColor: Color { Color.resolvedText(scheme: systemScheme, mode: appearance.appearanceMode) }
+    private var bgColor: Color { Color.resolvedBackground(scheme: systemScheme, mode: appearance.appearanceMode) }
+
+    var body: some View {
+        Button(action: { isShowingPopover.toggle() }) {
+            Image(systemName: "info.circle")
+                .font(.system(size: 11))
+                .foregroundColor(textColor.opacity(0.5))
+        }
+        .buttonStyle(PlainButtonStyle())
+        .popover(isPresented: $isShowingPopover, arrowEdge: .top) {
+            Text(text)
+                .font(.system(size: 11))
+                .foregroundColor(textColor)
+                .padding(12)
+                .frame(width: 200)
+                .background(bgColor)
+        }
     }
 }
 
