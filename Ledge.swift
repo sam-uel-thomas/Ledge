@@ -173,16 +173,20 @@ struct SettingsView: View {
                         .pickerStyle(SegmentedPickerStyle())
                     }
                     
-                    Toggle("Move files instead of copying", isOn: $appearance.moveFiles)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(textColor)
-                        .toggleStyle(SwitchToggleStyle(tint: .blue))
-                        .padding(.top, 5)
-                    
-                    Text("Only applies when moving between local storage. Drops to browsers will always copy.")
-                        .font(.system(size: 10))
-                        .foregroundColor(textColor.opacity(0.5))
-                        .padding(.leading, 5)
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(spacing: 6) {
+                            Toggle("Move files instead of copying", isOn: $appearance.moveFiles)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(textColor)
+                                .toggleStyle(SwitchToggleStyle(tint: .blue))
+                            
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 11))
+                                .foregroundColor(textColor.opacity(0.5))
+                                .help("Only applies when moving between local storage. Drops to browsers will always copy.")
+                        }
+                    }
+                    .padding(.top, 5)
                 }
                 .padding(.horizontal, 40)
                 
