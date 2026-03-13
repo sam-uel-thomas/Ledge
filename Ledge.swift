@@ -149,22 +149,22 @@ struct SettingsView: View {
         ZStack {
             bgColor.edgesIgnoringSafeArea(.all)
             
-            VStack(spacing: 20) {
+            VStack(spacing: 12) {
                 VStack {
                     Image(systemName: "square.stack.3d.down.right.fill")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 70, height: 70)
+                        .frame(width: 50, height: 50)
                         .foregroundColor(textColor)
                 }
-                .padding(.top, 30)
+                .padding(.top, 20)
                 
                 Text("Ledge")
-                    .font(.system(size: 24, weight: .black))
+                    .font(.system(size: 20, weight: .black))
                     .tracking(1)
                     .foregroundColor(textColor)
                 
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 16) {
                     Divider().background(textColor.opacity(0.3))
                     
                     // Appearance Section
@@ -183,7 +183,7 @@ struct SettingsView: View {
                     }
                     
                     // Toggles Section
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 10) {
                         // Move Files Toggle
                         HStack(spacing: 0) {
                             HStack(spacing: 4) {
@@ -198,7 +198,7 @@ struct SettingsView: View {
                                 .toggleStyle(SwitchToggleStyle(tint: .blue))
                                 .scaleEffect(0.8)
                                 .labelsHidden()
-                                .offset(x: 4) // Align visual edge of scaled toggle
+                                .offset(x: 4)
                         }
                         
                         // Launch at Login Toggle
@@ -211,21 +211,21 @@ struct SettingsView: View {
                                 .toggleStyle(SwitchToggleStyle(tint: .blue))
                                 .scaleEffect(0.8)
                                 .labelsHidden()
-                                .offset(x: 4) // Align visual edge of scaled toggle
+                                .offset(x: 4)
                         }
                     }
                 }
-                .padding(.horizontal, 35) // Unified padding for the entire block
+                .padding(.horizontal, 35)
                 
                 Spacer()
                 
                 Text("Tip: Hold left-click and shake to summon.")
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     .foregroundColor(textColor.opacity(0.5))
-                    .padding(.bottom, 25)
+                    .padding(.bottom, 20)
             }
         }
-        .frame(width: 320, height: 420)
+        .frame(width: 320, height: 340)
         .preferredColorScheme(appearance.colorScheme)
     }
 }
