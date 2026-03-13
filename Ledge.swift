@@ -178,7 +178,7 @@ struct SettingsView: View {
                             Toggle(isOn: $appearance.moveFiles) {
                                 HStack(spacing: 4) {
                                     Text("Move files instead of copying")
-                                        .font(.system(size: 11, weight: .medium))
+                                        .font(.system(size: 12, weight: .medium))
                                         .foregroundColor(textColor)
                                         .lineLimit(1)
                                     
@@ -197,7 +197,7 @@ struct SettingsView: View {
                 Spacer()
                 
                 Text("Tip: Hold left-click and shake to summon.")
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundColor(textColor.opacity(0.5))
                     .padding(.bottom, 25)
             }
