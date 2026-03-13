@@ -219,14 +219,14 @@ struct CloseButton: View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(textColor.opacity(isHovering ? 0.2 : 0.1))
-                    .frame(width: 20, height: 20)
+                    .fill(textColor.opacity(isHovering ? 0.12 : 0.001))
+                    .frame(width: 22, height: 22)
                 
                 Image(systemName: "xmark")
                     .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(textColor.opacity(0.7))
+                    .foregroundColor(textColor.opacity(isHovering ? 0.9 : 0.6))
             }
-            .scaleEffect(isHovering ? 1.05 : 1.0)
+            .scaleEffect(isHovering ? 1.08 : 1.0)
             .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isHovering)
         }
         .buttonStyle(PlainButtonStyle())
@@ -246,7 +246,7 @@ struct ListCloseButton: View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(textColor.opacity(isHovering ? 0.3 : 0.05))
+                    .fill(textColor.opacity(isHovering ? 0.2 : 0.001))
                     .frame(width: 16, height: 16)
                 
                 Image(systemName: "xmark")
@@ -299,16 +299,15 @@ struct ExpandButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                // Invisible circular hit area for better responsiveness
                 Circle()
-                    .fill(textColor.opacity(isHovering ? 0.1 : 0.001))
-                    .frame(width: 24, height: 24)
+                    .fill(textColor.opacity(isHovering ? 0.12 : 0.001))
+                    .frame(width: 22, height: 22)
                 
                 Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                     .font(.system(size: 8, weight: .black))
-                    .foregroundColor(textColor.opacity(isHovering ? 0.8 : 0.5))
+                    .foregroundColor(textColor.opacity(isHovering ? 0.9 : 0.6))
             }
-            .scaleEffect(isHovering ? 1.1 : 1.0)
+            .scaleEffect(isHovering ? 1.08 : 1.0)
             .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isHovering)
         }
         .buttonStyle(PlainButtonStyle())
