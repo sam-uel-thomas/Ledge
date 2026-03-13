@@ -181,39 +181,36 @@ struct SettingsView: View {
                         .pickerStyle(SegmentedPickerStyle())
                     }
                     
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Move Files Toggle
                         HStack(spacing: 0) {
-                            Toggle(isOn: $appearance.moveFiles) {
-                                HStack(spacing: 4) {
-                                    Text("Move files instead of copying")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(textColor)
-                                        .lineLimit(1)
-                                    
-                                    InfoButton(text: "Only applies when moving between local storage. Drops to browsers will always copy.")
-                                }
-                            }
-                            .toggleStyle(SwitchToggleStyle(tint: .blue))
-                            .scaleEffect(0.85)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .offset(x: -12) // Compensate for scaleEffect alignment shift
-                        
-                        HStack(spacing: 0) {
-                            Toggle(isOn: $appearance.launchAtLogin) {
-                                Text("Launch Ledge at login")
+                            HStack(spacing: 4) {
+                                Text("Move files instead of copying")
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(textColor)
-                                    .lineLimit(1)
+                                
+                                InfoButton(text: "Only applies when moving between local storage. Drops to browsers will always copy.")
                             }
-                            .toggleStyle(SwitchToggleStyle(tint: .blue))
-                            .scaleEffect(0.85)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            Spacer()
+                            Toggle("", isOn: $appearance.moveFiles)
+                                .toggleStyle(SwitchToggleStyle(tint: .blue))
+                                .scaleEffect(0.8)
+                                .labelsHidden()
                         }
-                        .offset(x: -12) // Same offset for perfect vertical alignment
+                        
+                        // Launch at Login Toggle
+                        HStack(spacing: 0) {
+                            Text("Launch Ledge at login")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(textColor)
+                            Spacer()
+                            Toggle("", isOn: $appearance.launchAtLogin)
+                                .toggleStyle(SwitchToggleStyle(tint: .blue))
+                                .scaleEffect(0.8)
+                                .labelsHidden()
+                        }
                     }
-                    .padding(.top, 5)
-                    .padding(.leading, 12) // Move entire block right to center relative to picker
+                    .padding(.top, 10)
                 }
                 .padding(.horizontal, 40)
                 
