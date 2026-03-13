@@ -287,6 +287,37 @@ struct InfoButton: View {
     }
 }
 
+struct ExpandButton: View {
+    @State private var isHovering = false
+    @Environment(\.colorScheme) var systemScheme
+    @ObservedObject var appearance = AppearanceManager.shared
+    var isExpanded: Bool
+    var action: () -> Void
+
+    private var textColor: Color { Color.resolvedText(scheme: systemScheme, mode: appearance.appearanceMode) }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Capsule()
+                    .fill(textColor.opacity(isHovering ? 0.4 : 0.2))
+                    .frame(width: 36, height: 4)
+                
+                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 8, weight: .black))
+                    .foregroundColor(textColor.opacity(isHovering ? 0.8 : 0.5))
+            }
+            .padding(.vertical, 12) // Larger vertical hit area
+            .padding(.horizontal, 8)
+            .background(Color.black.opacity(0.001)) // Invisible background for larger hit area
+            .scaleEffect(isHovering ? 1.05 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isHovering)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hovering in isHovering = hovering }
+    }
+}
+
 // 2. SHAKE DETECTION
 class ShakeDetector {
     private var monitor: Any?
@@ -416,18 +447,10 @@ struct LedgeView: View {
                     WindowDragHandle().frame(height: 35)
                     
                     if droppedFiles.count > 1 {
-                        Button(action: { withAnimation(.spring()) { isExpanded.toggle() } }) {
-                            HStack(spacing: 4) {
-                                Capsule()
-                                    .fill(textColor.opacity(0.2))
-                                    .frame(width: 36, height: 4)
-                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                    .font(.system(size: 8, weight: .bold))
-                                    .foregroundColor(textColor.opacity(0.5))
-                            }
+                        ExpandButton(isExpanded: isExpanded) {
+                            withAnimation(.spring()) { isExpanded.toggle() }
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .padding(.top, 12)
+                        .padding(.top, 0) // ExpandButton already has padding for its hit area
                     } else {
                         Capsule()
                             .fill(textColor.opacity(0.2))
