@@ -226,6 +226,32 @@ struct CloseButton: View {
     }
 }
 
+struct ListCloseButton: View {
+    @State private var isHovering = false
+    @Environment(\.colorScheme) var systemScheme
+    @ObservedObject var appearance = AppearanceManager.shared
+    var action: () -> Void
+
+    private var textColor: Color { Color.resolvedText(scheme: systemScheme, mode: appearance.appearanceMode) }
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(textColor.opacity(isHovering ? 0.3 : 0.05))
+                    .frame(width: 16, height: 16)
+                
+                Image(systemName: "xmark")
+                    .font(.system(size: 6, weight: .bold))
+                    .foregroundColor(textColor.opacity(isHovering ? 1.0 : 0.4))
+            }
+            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isHovering)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hovering in isHovering = hovering }
+    }
+}
+
 // 2. SHAKE DETECTION
 class ShakeDetector {
     private var monitor: Any?
@@ -439,7 +465,7 @@ struct LedgeView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "square.stack.3d.down.right")
                         .font(.system(size: 28, weight: .thin))
-                        .foregroundColor(.blue)
+                        .foregroundColor(textColor.opacity(0.8)) // Matches text color
                     Text("Drop Files")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(textColor.opacity(0.6))
@@ -465,12 +491,9 @@ struct LedgeView: View {
                             .lineLimit(1)
                             .foregroundColor(textColor)
                         Spacer()
-                        Button(action: { removeFile(file) }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 7, weight: .bold))
-                                .foregroundColor(textColor.opacity(0.4))
+                        ListCloseButton {
+                            removeFile(file)
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
