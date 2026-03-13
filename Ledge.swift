@@ -197,17 +197,23 @@ struct SettingsView: View {
                             .scaleEffect(0.85)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
+                        .offset(x: -12) // Compensate for scaleEffect alignment shift
                         
                         HStack(spacing: 0) {
-                            Toggle("Launch Ledge at login", isOn: $appearance.launchAtLogin)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(textColor)
-                                .toggleStyle(SwitchToggleStyle(tint: .blue))
-                                .scaleEffect(0.85)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Toggle(isOn: $appearance.launchAtLogin) {
+                                Text("Launch Ledge at login")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(textColor)
+                                    .lineLimit(1)
+                            }
+                            .toggleStyle(SwitchToggleStyle(tint: .blue))
+                            .scaleEffect(0.85)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
+                        .offset(x: -12) // Same offset for perfect vertical alignment
                     }
                     .padding(.top, 5)
+                    .padding(.leading, 12) // Move entire block right to center relative to picker
                 }
                 .padding(.horizontal, 40)
                 
