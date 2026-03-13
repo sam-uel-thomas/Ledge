@@ -178,7 +178,7 @@ struct SettingsView: View {
                             Toggle(isOn: $appearance.moveFiles) {
                                 HStack(spacing: 4) {
                                     Text("Move files instead of copying")
-                                        .font(.system(size: 12, weight: .medium))
+                                        .font(.system(size: 11, weight: .medium))
                                         .foregroundColor(textColor)
                                         .lineLimit(1)
                                     
