@@ -164,14 +164,14 @@ struct SettingsView: View {
                     .tracking(1)
                     .foregroundColor(textColor)
                 
-                Divider().background(textColor.opacity(0.3)).padding(.horizontal, 40)
-                
-                VStack(alignment: .leading, spacing: 15) {
-                    VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 20) {
+                    Divider().background(textColor.opacity(0.3))
+                    
+                    // Appearance Section
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Appearance")
                             .font(.caption)
                             .foregroundColor(textColor.opacity(0.6))
-                            .padding(.leading, 5)
                         
                         Picker("", selection: $appearance.appearanceMode) {
                             Text("System").tag("System")
@@ -179,9 +179,10 @@ struct SettingsView: View {
                             Text("Dark").tag("Dark")
                         }
                         .pickerStyle(SegmentedPickerStyle())
-                        .frame(maxWidth: .infinity) // Ensures picker fills the width
+                        .frame(maxWidth: .infinity)
                     }
                     
+                    // Toggles Section
                     VStack(alignment: .leading, spacing: 12) {
                         // Move Files Toggle
                         HStack(spacing: 0) {
@@ -197,6 +198,7 @@ struct SettingsView: View {
                                 .toggleStyle(SwitchToggleStyle(tint: .blue))
                                 .scaleEffect(0.8)
                                 .labelsHidden()
+                                .offset(x: 4) // Align visual edge of scaled toggle
                         }
                         
                         // Launch at Login Toggle
@@ -209,11 +211,11 @@ struct SettingsView: View {
                                 .toggleStyle(SwitchToggleStyle(tint: .blue))
                                 .scaleEffect(0.8)
                                 .labelsHidden()
+                                .offset(x: 4) // Align visual edge of scaled toggle
                         }
                     }
-                    .padding(.top, 10)
                 }
-                .padding(.horizontal, 40)
+                .padding(.horizontal, 35) // Unified padding for the entire block
                 
                 Spacer()
                 
