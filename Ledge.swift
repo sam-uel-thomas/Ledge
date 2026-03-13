@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+import ServiceManagement
 
 // Custom AppDelegate to handle the accessory app behavior and Status Bar
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -36,18 +37,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Show Ledge (Test)", action: #selector(testShake), keyEquivalent: "s"))
-        menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit Ledge", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
         statusItem?.menu = menu
-    }
-    
-    @objc func testShake() {
-        let mouseLocation = NSEvent.mouseLocation
-        ledgeWindowController?.showShelf(at: mouseLocation)
     }
     
     @objc func openSettings() {
@@ -94,6 +88,20 @@ class AppearanceManager: ObservableObject {
     }
     @AppStorage("moveFiles") var moveFiles: Bool = false
     
+    @Published var launchAtLogin: Bool = SMAppService.mainApp.status == .enabled {
+        didSet {
+            do {
+                if launchAtLogin {
+                    try SMAppService.mainApp.register()
+                } else {
+                    try SMAppService.mainApp.unregister()
+                }
+            } catch {
+                print("Failed to update launch at login status: \(error)")
+            }
+        }
+    }
+    
     var colorScheme: ColorScheme? {
         switch appearanceMode {
         case "Light": return .light
@@ -117,7 +125,7 @@ class AppearanceManager: ObservableObject {
 class SettingsWindowController: NSWindowController {
     convenience init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 380),
+            contentRect: NSRect(x: 0, y: 0, width: 320, height: 420),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -173,7 +181,7 @@ struct SettingsView: View {
                         .pickerStyle(SegmentedPickerStyle())
                     }
                     
-                    VStack(alignment: .leading, spacing: 5) {
+                    VStack(alignment: .leading, spacing: 10) {
                         HStack(spacing: 0) {
                             Toggle(isOn: $appearance.moveFiles) {
                                 HStack(spacing: 4) {
@@ -186,8 +194,17 @@ struct SettingsView: View {
                                 }
                             }
                             .toggleStyle(SwitchToggleStyle(tint: .blue))
-                            .scaleEffect(0.85) // Make the toggle a little smaller
+                            .scaleEffect(0.85)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        
+                        HStack(spacing: 0) {
+                            Toggle("Launch Ledge at login", isOn: $appearance.launchAtLogin)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(textColor)
+                                .toggleStyle(SwitchToggleStyle(tint: .blue))
+                                .scaleEffect(0.85)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                     .padding(.top, 5)
@@ -202,7 +219,7 @@ struct SettingsView: View {
                     .padding(.bottom, 25)
             }
         }
-        .frame(width: 320, height: 380)
+        .frame(width: 320, height: 420)
         .preferredColorScheme(appearance.colorScheme)
     }
 }
@@ -525,7 +542,7 @@ struct LedgeView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "square.stack.3d.down.right")
                         .font(.system(size: 28, weight: .thin))
-                        .foregroundColor(textColor.opacity(0.8)) // Matches text color
+                        .foregroundColor(textColor.opacity(0.8))
                     Text("Drop Files")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(textColor.opacity(0.6))
@@ -595,30 +612,21 @@ struct LedgeView: View {
     }
     
     private func startDrag(files: [DroppedFile]) -> NSItemProvider {
-        // Return first item provider, but we could support multiple if needed
-        // For simplicity, we provide the first one. macOS will handle single file URL drag.
         guard let first = files.first else { return NSItemProvider() }
         
         let provider = NSItemProvider(item: first.url as NSSecureCoding, typeIdentifier: UTType.fileURL.identifier)
         
-        // Handle Move vs Copy logic
         let moveFiles = appearance.moveFiles
         let urlsToDelete = files.map { $0.url }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // We animate the dismissal
             withAnimation(.easeOut(duration: 0.3)) {
                 self.isFadingOut = true
             }
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                // Check if we should delete (Move operation)
                 if moveFiles {
                     for url in urlsToDelete {
-                        // Check if file still exists and is on local storage
-                        // (Heuristic: dropped to browser usually doesn't trigger move operation at OS level,
-                        // but here we manually delete if setting is on. 
-                        // To be safer, we could check if it was a MOVE operation, but SwiftUI doesn't expose it here.)
                         try? FileManager.default.removeItem(at: url)
                     }
                 }
